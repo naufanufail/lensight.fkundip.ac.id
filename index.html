@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LENSIGHT - Ultimate Health Ecosystem PWA</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: '#02050E', space: '#050A14',
+                        cyanGlow: '#00D1FF', surgicalTeal: '#00FFC6',
+                        softViolet: '#8B7CFF', alertRed: '#FF2A55',
+                        warningYellow: '#FFC800'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap');
+        
+        body { background-color: #02050E; color: #F5F7FA; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* Premium Glass Nav & Cards */
+        .glass-nav {
+            background: rgba(2, 5, 14, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 209, 255, 0.15);
+        }
+        .premium-card {
+            background: linear-gradient(160deg, rgba(12, 20, 35, 0.6) 0%, rgba(5, 10, 20, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); transition: all 0.3s ease;
+        }
+        .premium-card:hover { border-color: rgba(0, 209, 255, 0.3); box-shadow: 0 10px 30px rgba(0, 209, 255, 0.1); }
+
+        /* KUNCI PERBAIKAN LAYOUT: Kita matikan scroll ganda, biarkan halaman scroll natural */
+        /* Inputs & Sliders yang Aman */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; position: relative; z-index: 10; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%;
+            background: #00D1FF; cursor: grab; margin-top: -12px;
+            box-shadow: 0 0 25px rgba(0, 209, 255, 0.8), inset 0 0 8px rgba(255,255,255,0.6);
+            border: 2px solid white; transition: transform 0.2s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
+        
+        .detail-btn.active { border-color: #00D1FF; background: rgba(0, 209, 255, 0.2); }
+
+        /* Efek Transisi Mulus */
+        .fog-transition { transition: background-color 0.1s linear, backdrop-filter 0.1s linear; }
+
+        /* Camera HUD FX */
+        .hud-scanline { background: linear-gradient(to bottom, rgba(0,255,198,0) 0%, rgba(0,255,198,0.3) 50%, rgba(0,255,198,0) 100%); background-size: 100% 10px; animation: scan 3s linear infinite; pointer-events: none; }
+        @keyframes scan { 0% { background-position: 0 -100px; } 100% { background-position: 0 600px; } }
+        .radar-sweep { background: conic-gradient(from 0deg, transparent 70%, rgba(0,209,255,0.8) 100%); border-radius: 50%; animation: sweep 2.5s linear infinite; }
+        @keyframes sweep { to { transform: rotate(360deg); } }
+
+        /* Video Filter */
+        .video-enhanced { filter: contrast(140%) brightness(120%) saturate(110%); }
+        
+        /* Global Web Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #02050E; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,209,255,0.5); }
+    </style>
+</head>
+<body class="selection:bg-cyanGlow selection:text-navy relative">
+
+    <canvas id="bg-particles" class="fixed inset-0 pointer-events-none opacity-20 z-0"></canvas>
+
+    <nav class="fixed w-full z-50 glass-nav py-4 px-6 md:px-12 flex justify-between items-center transition-all">
+        <div class="flex items-center gap-4 cursor-pointer" onclick="window.scrollTo(0,0)">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyanGlow to-softViolet flex items-center justify-center shadow-[0_0_20px_rgba(0,209,255,0.5)]">
+                <i class="fa-solid fa-eye text-navy text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-display font-bold text-xl tracking-widest text-white leading-tight">LENSIGHT</h1>
+                <p class="text-[9px] font-mono text-cyanGlow tracking-widest uppercase">Live PWA Ecosystem</p>
+            </div>
+        </div>
+        <button onclick="document.getElementById('sandbox').scrollIntoView()" class="bg-cyanGlow hover:bg-white text-navy px-6 py-2.5 rounded-full font-bold transition-all shadow-[0_0_20px_rgba(0,209,255,0.4)] text-xs font-mono flex items-center gap-2">
+            MULAI SKRINING <i class="fa-solid fa-arrow-down"></i>
+        </button>
+    </nav>
+
+    <section class="relative min-h-[60vh] flex items-center pt-28 pb-10 z-10 border-b border-white/5 bg-space">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,209,255,0.1)_0%,transparent_60%)] pointer-events-none"></div>
+        <div class="container mx-auto px-6 md:px-12 relative flex flex-col items-center text-center">
+            
+            <div class="gsap-hero inline-flex items-center gap-3 py-1.5 px-4 rounded-full border border-softViolet/30 bg-softViolet/10 text-softViolet text-xs font-mono font-bold tracking-widest mb-6 uppercase">
+                <div class="w-2 h-2 rounded-full bg-softViolet animate-pulse"></div> ISF 2026 - Health Prototype
+            </div>
+            
+            <h1 class="gsap-hero text-4xl md:text-6xl font-display font-extrabold mb-6 tracking-tighter leading-[1.1] max-w-4xl text-white">
+                Platform Deteksi Katarak <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyanGlow via-surgicalTeal to-softViolet">Secara Real-Time.</span>
+            </h1>
+            
+            <p class="gsap-hero text-white/60 text-base max-w-3xl mb-8 font-light leading-relaxed">
+                LENSIGHT mendeteksi penurunan penglihatan melalui 4 parameter fungsional yang terjadi jauh sebelum ketajaman Snellen menurun.
+            </p>
+        </div>
+    </section>
+
+    <section id="sandbox" class="py-16 relative z-10 bg-[#02050E]">
+        <div class="container mx-auto px-4 md:px-8 max-w-7xl">
+            
+            <div class="mb-12 text-center gsap-fade">
+                <div class="inline-flex items-center gap-2 py-1 px-3 rounded bg-cyanGlow/10 border border-cyanGlow/30 text-cyanGlow text-[10px] font-mono font-bold tracking-widest mb-4">
+                    <i class="fa-solid fa-code"></i> ENGINE SANDBOX
+                </div>
+                <h2 class="text-3xl md:text-4xl font-display font-bold text-white mb-4">Tes Fungsi Penglihatan</h2>
+                <p class="text-white/60 text-sm max-w-3xl mx-auto leading-relaxed">
+                    Ikuti instruksi fisik di modul sebelah kiri. Sesuaikan slider/tombol sesuai kondisi. <b>Gulir halaman ke bawah untuk melihat panel kanan merespons secara <i>real-time</i>.</b>
+                </p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row w-full gap-8 lg:gap-12">
+                
+                <div class="w-full lg:w-7/12 flex flex-col gap-8 min-w-0">
+                    
+                    <div class="premium-card p-6 md:p-8 gsap-fade w-full">
+                        <div class="flex justify-between items-center border-b border-white/10 pb-4 mb-5">
+                            <h3 class="font-bold text-white text-lg flex items-center gap-3"><i class="fa-solid fa-cloud text-cyanGlow"></i> 1. Fog Perception (20%)</h3>
+                            <span class="text-[10px] font-mono text-cyanGlow bg-cyanGlow/10 px-2 py-1 rounded border border-cyanGlow/20">VAS SLIDER</span>
+                        </div>
+                        <div class="bg-cyanGlow/10 border-l-4 border-cyanGlow rounded-r-lg p-4 mb-6">
+                            <p class="text-xs text-cyanGlow/90 leading-relaxed font-mono">
+                                <strong>📍 INSTRUKSI (Tanpa Kartu):</strong> Geser slider biru ke kanan hingga gambar ruangan di bawah ini menjadi sama buram/berkabutnya dengan pandangan asli Anda.
+                            </p>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-6 items-center">
+                            <div class="w-full md:w-2/5 aspect-[4/3] bg-black rounded-xl overflow-hidden relative border border-white/20">
+                                <img src="https://images.unsplash.com/photo-1554629947-334ff61d85dc?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover">
+                                <div id="fog-overlay" class="absolute inset-0 fog-transition pointer-events-none" style="background-color: rgba(230,245,255,0); backdrop-filter: blur(0px);"></div>
+                            </div>
+                            <div class="w-full md:w-3/5">
+                                <div class="flex justify-between items-end mb-4">
+                                    <label class="text-sm text-white/70 font-mono">Intensitas Kabut</label>
+                                    <span id="ui-val-fog" class="text-cyanGlow font-bold font-mono text-2xl">0%</span>
+                                </div>
+                                <input type="range" id="input-fog" min="0" max="100" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="premium-card p-6 md:p-8 gsap-fade w-full">
+                        <div class="flex justify-between items-center border-b border-white/10 pb-4 mb-5">
+                            <h3 class="font-bold text-white text-lg flex items-center gap-3"><i class="fa-solid fa-circle-half-stroke text-cyanGlow"></i> 2. Contrast (35%)</h3>
+                            <span class="text-[10px] font-mono text-cyanGlow bg-cyanGlow/10 px-2 py-1 rounded border border-cyanGlow/20">PELLI-ROBSON</span>
+                        </div>
+                        <div class="bg-cyanGlow/10 border-l-4 border-cyanGlow rounded-r-lg p-4 mb-6">
+                            <p class="text-xs text-cyanGlow/90 leading-relaxed font-mono">
+                                <strong>📍 INSTRUKSI (Pegang Kartu A - Depan):</strong> Pegang kartu sejauh 30cm. Baca huruf dari yang tebal ke pudar. <b>Klik kotak putih berulang kali</b> untuk memudarkan simulasi hingga sesuai dengan baris yang dapat Anda baca.
+                            </p>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-6 items-center">
+                            <div class="w-full md:w-2/5 aspect-[4/3] bg-white rounded-xl flex flex-col items-center justify-center cursor-pointer border-4 border-transparent hover:border-cyanGlow transition relative group shadow-[inset_0_0_20px_rgba(0,0,0,0.1)]" id="btn-contrast">
+                                <div id="ui-txt-contrast" class="text-4xl font-display font-bold text-black tracking-[0.2em] transition-opacity duration-300">HNRKC</div>
+                                <div class="absolute bottom-3 text-[10px] font-mono font-bold text-black/50 group-hover:text-cyanGlow transition">KLIK KOTAK INI</div>
+                            </div>
+                            <div class="w-full md:w-3/5">
+                                <div class="flex justify-between items-end mb-4">
+                                    <label class="text-sm text-white/70 font-mono">Tingkat Defisit Kontras</label>
+                                    <span id="ui-val-contrast" class="text-cyanGlow font-bold font-mono text-2xl">0%</span>
+                                </div>
+                                <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden border border-white/5">
+                                    <div id="ui-bar-contrast" class="h-full bg-cyanGlow w-0 transition-all duration-300"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="premium-card p-6 md:p-8 gsap-fade w-full">
+                        <div class="flex justify-between items-center border-b border-white/10 pb-4 mb-5">
+                            <h3 class="font-bold text-white text-lg flex items-center gap-3"><i class="fa-solid fa-barcode text-cyanGlow"></i> 3. Detail (25%)</h3>
+                            <span class="text-[10px] font-mono text-cyanGlow bg-cyanGlow/10 px-2 py-1 rounded border border-cyanGlow/20">CAMPBELL-ROBSON</span>
+                        </div>
+                        <div class="bg-cyanGlow/10 border-l-4 border-cyanGlow rounded-r-lg p-4 mb-6">
+                            <p class="text-xs text-cyanGlow/90 leading-relaxed font-mono">
+                                <strong>📍 INSTRUKSI (Balik Kartu A - Belakang):</strong> Cari kotak bergaris dengan jarak paling rapat yang arahnya <b>masih bisa Anda pastikan</b>. Pilih opsi yang sesuai di bawah ini.
+                            </p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-6 items-center">
+                            <div class="w-full md:w-3/5 flex justify-between gap-3">
+                                <button class="detail-btn flex-1 aspect-square bg-white/5 border border-white/20 rounded-xl hover:bg-white/10 flex flex-col items-center justify-center transition focus:outline-none" data-val="100">
+                                    <div class="w-8 h-8 flex flex-col justify-evenly border-y border-white/40"><div class="h-1 bg-white"></div></div>
+                                    <span class="text-[11px] mt-3 font-mono text-white/80">1 cpd<br>(Kasar)</span>
+                                </button>
+                                <button class="detail-btn flex-1 aspect-square bg-white/5 border border-white/20 rounded-xl hover:bg-white/10 flex flex-col items-center justify-center transition focus:outline-none" data-val="50">
+                                    <div class="w-8 h-8 flex flex-col justify-evenly border-y border-white/40"><div class="h-[2px] bg-white"></div><div class="h-[2px] bg-white"></div><div class="h-[2px] bg-white"></div></div>
+                                    <span class="text-[11px] mt-3 font-mono text-white/80">4 cpd<br>(Sedang)</span>
+                                </button>
+                                <button class="detail-btn active flex-1 aspect-square rounded-xl flex flex-col items-center justify-center transition focus:outline-none bg-cyanGlow/20 border-cyanGlow" data-val="0">
+                                    <div class="w-8 h-8 flex flex-col justify-evenly border-y border-white/40"><div class="h-[1px] bg-white"></div><div class="h-[1px] bg-white"></div><div class="h-[1px] bg-white"></div><div class="h-[1px] bg-white"></div><div class="h-[1px] bg-white"></div><div class="h-[1px] bg-white"></div></div>
+                                    <span class="text-[11px] mt-3 font-mono font-bold text-white">16 cpd<br>(Normal)</span>
+                                </button>
+                            </div>
+                            <div class="w-full md:w-2/5 text-right sm:text-left">
+                                <label class="text-sm text-white/70 font-mono block mb-1">Defisit Resolusi</label>
+                                <span id="ui-val-detail" class="text-cyanGlow font-bold font-mono text-2xl">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="premium-card p-6 md:p-8 gsap-fade w-full">
+                        <div class="flex justify-between items-center border-b border-white/10 pb-4 mb-5">
+                            <h3 class="font-bold text-white text-lg flex items-center gap-3"><i class="fa-solid fa-sun text-warningYellow"></i> 4. Glare (20%)</h3>
+                            <span class="text-[10px] font-mono text-warningYellow bg-warningYellow/10 px-2 py-1 rounded border border-warningYellow/20">C-QUANT</span>
+                        </div>
+                        <div class="bg-warningYellow/10 border-l-4 border-warningYellow rounded-r-lg p-4 mb-6">
+                            <p class="text-xs text-warningYellow/90 leading-relaxed font-mono">
+                                <strong>📍 INSTRUKSI (Gunakan KARTU B & Senter HP):</strong> Sorot Kartu B (yang mengilap) dengan senter dari jarak 20cm. <b>Geser slider di bawah ke kanan</b> untuk mensimulasikan intensitas silau pantulan senter tersebut hingga angka (4,2,7) ikut memudar.
+                            </p>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-6 items-center">
+                            <div class="w-full md:w-2/5 aspect-[4/3] bg-[#0A0A0A] rounded-xl border border-white/20 overflow-hidden relative flex items-center justify-evenly shadow-inner">
+                                <div id="ui-glare-wash" class="absolute inset-0 bg-white transition-opacity duration-100 pointer-events-none z-10" style="opacity:0; mix-blend-mode: overlay;"></div>
+                                <div id="ui-glare-beam" class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,1)_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] transition-opacity duration-100 blur-xl pointer-events-none z-0" style="opacity:0;"></div>
+                                
+                                <span class="glare-num text-5xl font-display font-bold text-white/20 z-20 transition-all">4</span>
+                                <span class="glare-num text-5xl font-display font-bold text-white/20 z-20 transition-all">2</span>
+                                <span class="glare-num text-5xl font-display font-bold text-white/20 z-20 transition-all">7</span>
+                            </div>
+                            <div class="w-full md:w-3/5">
+                                <div class="flex justify-between items-end mb-4">
+                                    <label class="text-sm text-white/70 font-mono">Intensitas Silau (*Glare*)</label>
+                                    <span id="ui-val-glare" class="text-warningYellow font-bold font-mono text-2xl">0%</span>
+                                </div>
+                                <input type="range" id="input-glare" min="0" max="100" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="w-full lg:w-5/12 flex flex-col gap-6 min-w-0">
+                    
+                    <div id="ui-panel-card" class="premium-card p-6 md:p-8 text-center relative overflow-hidden transition-all duration-500 border-2 border-surgicalTeal shadow-[0_0_30px_rgba(0,255,198,0.2)] w-full">
+                        <div id="ui-panel-glow" class="absolute inset-0 opacity-15 bg-surgicalTeal transition-colors duration-500 pointer-events-none"></div>
+                        
+                        <div class="relative z-10">
+                            <h3 class="text-xs font-bold text-white/50 mb-2 uppercase tracking-widest font-mono">Total Skor LCRI</h3>
+                            
+                            <div id="ui-score" class="text-[6rem] md:text-[8rem] leading-none font-display font-extrabold text-white tracking-tighter drop-shadow-lg mb-6">0</div>
+                            
+                            <div class="bg-black/60 rounded-2xl p-5 border border-white/10 backdrop-blur-md shadow-inner">
+                                <p class="text-[10px] font-mono text-white/50 uppercase tracking-widest mb-3">Klasifikasi Tier Klinis</p>
+                                
+                                <div id="ui-badge" class="text-2xl md:text-3xl font-display font-extrabold text-surgicalTeal uppercase tracking-widest mb-3 drop-shadow-[0_0_15px_rgba(0,255,198,0.8)] transition-all duration-300">
+                                    ⭐ LUMINARY
+                                </div>
+                                
+                                <div id="ui-line" class="w-16 h-1 bg-surgicalTeal mx-auto rounded-full mb-4 transition-colors duration-300"></div>
+                                
+                                <p id="ui-desc" class="text-xs text-white/90 font-mono leading-relaxed text-center transition-all duration-300">
+                                    Penglihatan fungsional normal (risiko katarak rendah). Lakukan pemantauan rutin tahunan.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 px-4 mt-2">
+                        <div class="flex-grow h-px bg-white/10"></div>
+                        <span class="text-[10px] font-mono text-white/40 tracking-widest uppercase text-center">Aktivasi Modul Medis</span>
+                        <div class="flex-grow h-px bg-white/10"></div>
+                    </div>
+
+                    <div id="ui-mod-dtx" class="premium-card p-5 transition-all duration-500 opacity-40 grayscale pointer-events-none flex flex-col w-full">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-bold text-white text-sm flex items-center gap-2"><i class="fa-solid fa-brain text-warningYellow"></i> DTx: Neuro-Visual Rehab</h4>
+                                <p class="text-[10px] text-white/50 mt-1">Latihan Gabor Patch (Cegah maladaptasi otak).</p>
+                            </div>
+                            <span class="text-[8px] bg-warningYellow/20 text-warningYellow border border-warningYellow/30 px-2 py-1 rounded font-mono uppercase">Tier Prism</span>
+                        </div>
+                        
+                        <div class="bg-black/50 p-3 rounded-xl border border-white/10 mb-4 w-full">
+                            <div class="flex gap-4 items-center">
+                                <div class="w-20 h-20 bg-[#0A0A0A] rounded-lg overflow-hidden border border-white/20 flex-shrink-0 relative">
+                                    <canvas id="canvas-gabor" width="80" height="80" class="w-full h-full object-cover"></canvas>
+                                </div>
+                                <div class="flex-grow flex flex-col justify-between">
+                                    <div class="flex justify-between text-[10px] font-mono text-white/60 mb-2">
+                                        <span>Kontras: <span id="dtx-lbl-cont" class="text-cyanGlow font-bold">100%</span></span>
+                                        <span>Trials: <span id="dtx-lbl-streak" class="text-surgicalTeal font-bold">0</span>/3</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button onclick="window.dtxGuess('vertical')" class="bg-white/10 hover:bg-cyanGlow hover:text-navy text-[9px] text-white font-bold py-2 rounded transition shadow-sm border border-white/20">VERT (|)</button>
+                                        <button onclick="window.dtxGuess('horizontal')" class="bg-white/10 hover:bg-cyanGlow hover:text-navy text-[9px] text-white font-bold py-2 rounded transition shadow-sm border border-white/20">HORZ (—)</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="dtx-msg" class="text-[9px] font-mono text-center mt-3 text-white/40 h-3 font-bold">Klik tombol untuk menebak arah garis Gabor.</div>
+                        </div>
+                        
+                        <div class="w-full h-24 bg-black/30 rounded-lg p-2 border border-white/5 relative">
+                            <span class="absolute top-1 left-2 text-[8px] font-mono text-white/30 z-10">Grafik Neuroplastisitas</span>
+                            <canvas id="dtx-chart" class="relative z-0"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="premium-card p-5 transition-all duration-500 flex flex-col min-h-[300px] w-full">
+                        
+                        <div id="ui-mod-voyager" class="hidden flex-col h-full">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-bold text-white text-sm flex items-center gap-2"><i class="fa-solid fa-video text-alertRed"></i> AT: Live WebRTC Assist</h4>
+                                    <p class="text-[10px] text-white/50 mt-1">Sambungkan kamera *real-time* dengan relawan.</p>
+                                </div>
+                                <span class="text-[8px] bg-alertRed/20 text-alertRed border border-alertRed/30 px-2 py-1 rounded font-mono uppercase font-bold">Tier Voyager</span>
+                            </div>
+
+                            <div class="flex-grow bg-black rounded-xl border border-white/20 relative overflow-hidden flex flex-col items-center justify-center mt-2 shadow-inner min-h-[220px]">
+                                
+                                <video id="cam-video" autoplay playsinline class="absolute inset-0 w-full h-full object-cover hidden z-0"></video>
+                                <canvas id="cam-fallback" class="absolute inset-0 w-full h-full object-cover hidden z-0 opacity-80"></canvas>
+
+                                <div id="cam-hud" class="absolute inset-0 hidden z-10 pointer-events-none">
+                                    <div class="absolute inset-0 hud-scanline"></div>
+                                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-cyanGlow/50 rounded-full flex items-center justify-center">
+                                        <div class="w-2 h-2 bg-cyanGlow/80 rounded-full"></div>
+                                    </div>
+                                    <div class="absolute top-2 left-2 flex items-center gap-2">
+                                        <div class="bg-alertRed px-2 py-1 rounded text-[8px] font-bold text-white flex items-center gap-1 animate-pulse"><div class="w-1.5 h-1.5 bg-white rounded-full"></div> P2P LIVE</div>
+                                        <div class="text-[8px] font-mono text-cyanGlow border border-cyanGlow/30 px-1 rounded bg-black/50">E2E ENCRYPTED</div>
+                                    </div>
+                                    
+                                    <div class="absolute top-2 right-2 flex flex-col gap-2 pointer-events-auto">
+                                        <button onclick="window.toggleFilter()" class="bg-black/60 border border-white/20 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-cyanGlow hover:text-navy transition shadow-lg" title="Enhance Vision Filter"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                                        <button onclick="window.captureImage()" class="bg-black/60 border border-white/20 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-cyanGlow hover:text-navy transition shadow-lg" title="Take Snapshot"><i class="fa-solid fa-camera"></i></button>
+                                    </div>
+
+                                    <div id="snapshot-preview" class="absolute top-12 right-12 w-20 h-20 border-2 border-white rounded-lg overflow-hidden hidden shadow-2xl z-50">
+                                        <canvas id="snapshot-canvas" class="w-full h-full object-cover bg-black"></canvas>
+                                        <div class="absolute bottom-0 w-full bg-black/80 text-[8px] text-center text-white font-mono py-0.5">TEREKAM</div>
+                                    </div>
+                                    
+                                    <div class="absolute bottom-2 left-2 right-2 bg-black/80 backdrop-blur border border-white/20 rounded-lg p-2 flex justify-between items-center pointer-events-auto shadow-xl">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyanGlow to-softViolet text-navy flex items-center justify-center text-xs font-bold">N</div>
+                                            <div class="text-[10px] font-mono text-white leading-tight">Relawan Terhubung:<br><span class="text-cyanGlow font-bold">Naufa Nufail</span></div>
+                                        </div>
+                                        <button onclick="window.stopCamEngine()" class="w-8 h-8 rounded-full bg-alertRed text-white flex items-center justify-center hover:scale-110 transition shadow-lg"><i class="fa-solid fa-phone-slash"></i></button>
+                                    </div>
+                                </div>
+
+                                <div id="cam-msg-blocked" class="absolute inset-0 bg-[#061022]/90 backdrop-blur hidden z-10 flex-col items-center justify-center text-center px-4">
+                                    <i class="fa-solid fa-satellite-dish text-3xl text-cyanGlow mb-3 animate-pulse"></i>
+                                    <div class="text-[10px] font-mono text-cyanGlow font-bold mb-1">RADAR KAMERA AKTIF</div>
+                                    <div class="text-[8px] text-white/40 mb-4">(Kamera hardware diblokir browser krn dibuka via file lokal. Menggunakan Fallback Animasi).</div>
+                                    <button onclick="window.stopCamEngine()" class="text-[10px] font-bold bg-alertRed hover:bg-red-600 text-white px-5 py-2 rounded shadow-lg transition pointer-events-auto">TUTUP</button>
+                                </div>
+
+                                <div id="cam-btn-start" class="w-full px-5 z-20">
+                                    <button onclick="window.startCamEngine()" class="w-full bg-alertRed hover:bg-red-500 text-white py-3.5 rounded-lg font-bold text-xs shadow-[0_0_20px_rgba(255,42,85,0.4)] transition border border-red-400 flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-phone-volume animate-bounce"></i> PANGGIL BANTUAN (HELP)
+                                    </button>
+                                    <p class="text-center text-[8px] text-white/30 mt-2 font-mono">(Sistem dilengkapi Auto-Simulasi jika Kamera diblokir browser)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="ui-mod-luminary" class="flex flex-col h-full">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-bold text-white text-sm flex items-center gap-2"><i class="fa-solid fa-hand-holding-medical text-surgicalTeal"></i> Luminary Network</h4>
+                                    <p class="text-[10px] text-white/50 mt-1">Aplikasi *standby* untuk menerima panggilan pasien Voyager.</p>
+                                </div>
+                                <span class="text-[8px] bg-surgicalTeal/20 text-surgicalTeal border border-surgicalTeal/30 px-2 py-1 rounded font-mono uppercase font-bold">Tier Luminary</span>
+                            </div>
+
+                            <div class="flex-grow bg-[#050A14] rounded-xl border border-white/10 relative p-4 flex flex-col justify-center overflow-hidden mt-2">
+                                <div class="absolute inset-0 radar-sweep opacity-30 z-0 pointer-events-none"></div>
+                                <div class="absolute inset-0 border border-surgicalTeal/20 rounded-full scale-[1.2] z-0 pointer-events-none"></div>
+                                
+                                <div class="relative z-10 bg-black/90 backdrop-blur border-l-4 border-alertRed p-3 rounded-lg mb-3 shadow-[0_0_20px_rgba(255,42,85,0.3)] animate-pulse cursor-pointer hover:bg-white/10 transition" onclick="alert('📞 Menerima Panggilan Darurat WebRTC P2P...\n\n(Pada aplikasi nyata, layar ini akan digantikan oleh tampilan kamera belakang pasien yang meminta bantuan navigasi.)')">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <div class="text-[10px] font-mono text-alertRed font-bold"><i class="fa-solid fa-triangle-exclamation"></i> PANGGILAN MASUK</div>
+                                        <span class="text-[8px] text-white/40">Jarak: 1.2 km</span>
+                                    </div>
+                                    <div class="text-sm text-white font-bold">Pasien Voyager (LCRI 88)</div>
+                                    <div class="text-[9px] text-white/60 mt-1">Membutuhkan bantuan membaca label obat. Klik untuk bantu.</div>
+                                </div>
+                                <button onclick="alert('Menerima koneksi kamera pasien...')" class="relative z-10 w-full bg-surgicalTeal hover:bg-white text-navy font-bold text-xs py-2.5 rounded transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,255,198,0.4)]">
+                                    <i class="fa-solid fa-phone"></i> TERIMA PANGGILAN
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <footer id="team" class="bg-space border-t border-white/5 py-16 relative mt-12 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(0,209,255,0.05)_0%,transparent_50%)] pointer-events-none"></div>
+        <div class="container mx-auto px-6 text-center relative z-10">
+            <h2 class="text-2xl font-display font-bold mb-8 text-white tracking-widest uppercase">LENSIGHT TEAM</h2>
+            
+            <div class="flex flex-col md:flex-row flex-wrap justify-center items-center gap-x-6 gap-y-4 text-xs font-mono text-white/70 mb-10 max-w-4xl mx-auto">
+                <span class="text-cyanGlow font-bold bg-cyanGlow/10 px-4 py-2 rounded-full border border-cyanGlow/20">Keyshasi Cintanaya Sakti (Ketua Project)</span>
+                <span class="text-surgicalTeal font-bold bg-surgicalTeal/10 px-4 py-2 rounded-full border border-surgicalTeal/20">Naufa Nufail (Engineer)</span>
+                <span>Azita Azka Rusmana (Member)</span>
+                <span>Keitaro Syathir Rafif Haryono (Member)</span>
+                <span>Devan Syauqi Fathi (Member)</span>
+            </div>
+            
+            <div class="w-24 h-px bg-white/20 mx-auto mb-6"></div>
+            
+            <div class="text-[10px] text-white/40 uppercase tracking-widest leading-loose">
+                Fakultas Kedokteran, Universitas Diponegoro 2026<br>
+                International Student Festival (ISF) - Health Subtheme
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // ==========================================
+            // 1. STATE MANAGEMENT & DOM SELECTION
+            // ==========================================
+            const APP = { fog: 0, contrast: 0, detail: 0, glare: 0, score: 0 };
+            
+            const UI = {
+                // Inputs
+                inFog: document.getElementById('input-fog'),
+                btnCont: document.getElementById('btn-contrast'),
+                btnDet: document.querySelectorAll('.detail-btn'),
+                inGlare: document.getElementById('input-glare'),
+                
+                // Labels
+                lblFog: document.getElementById('ui-val-fog'),
+                lblCont: document.getElementById('ui-val-contrast'),
+                lblDet: document.getElementById('ui-val-detail'),
+                lblGlare: document.getElementById('ui-val-glare'),
+                
+                // Visuals
+                visFog: document.getElementById('fog-overlay'),
+                visContTxt: document.getElementById('ui-txt-contrast'),
+                visContBar: document.getElementById('ui-bar-contrast'),
+                visGlareBeam: document.getElementById('ui-glare-beam'),
+                visGlareWash: document.getElementById('ui-glare-wash'),
+                visGlareNum: document.querySelectorAll('.glare-num'),
+                
+                // Dashboard
+                dashScore: document.getElementById('ui-score'),
+                dashBadge: document.getElementById('ui-badge'),
+                dashDesc: document.getElementById('ui-desc'),
+                dashPanel: document.getElementById('ui-panel-card'),
+                dashGlow: document.getElementById('ui-panel-glow'),
+                dashLine: document.getElementById('ui-line'),
+                
+                // Modules
+                modDtx: document.getElementById('ui-mod-dtx'),
+                modPat: document.getElementById('ui-mod-voyager'),
+                modVol: document.getElementById('ui-mod-luminary')
+            };
+
+            // ==========================================
+            // 2. THE LENSIGHT CALCULATOR
+            // ==========================================
+            function executeEngine() {
+                // Kalkulasi Bobot: Contrast 35%, Detail 25%, Glare 20%, Fog 20%
+                let raw = (APP.contrast * 0.35) + (APP.detail * 0.25) + (APP.glare * 0.20) + (APP.fog * 0.20);
+                APP.score = Math.round(raw);
+
+                // Animasikan Skor ke Dashboard
+                gsap.to(UI.dashScore, { innerHTML: APP.score, duration: 0.4, snap: { innerHTML: 1 } });
+
+                // Matikan kamera jika sedang aktif namun skor LCRI turun
+                if(window.isCamLive && APP.score <= 70) window.stopCamEngine();
+
+                // EVALUASI TIER & MANAJEMEN UI MODULE
+                if (APP.score <= 35) {
+                    // --- LUMINARY ---
+                    UI.dashBadge.innerText = "⭐ LUMINARY";
+                    UI.dashBadge.className = "text-2xl md:text-3xl font-display font-extrabold text-surgicalTeal uppercase tracking-widest mb-3 drop-shadow-[0_0_15px_rgba(0,255,198,0.8)] transition-all duration-300";
+                    UI.dashDesc.innerText = "Penglihatan fungsional normal (risiko katarak sangat rendah). Lakukan pemantauan rutin tahunan. Modul DTx Standby.";
+                    UI.dashPanel.style.borderColor = "rgba(0, 255, 198, 0.6)";
+                    UI.dashGlow.style.backgroundColor = "#00FFC6";
+                    UI.dashLine.style.backgroundColor = "#00FFC6";
+                    
+                    UI.modDtx.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
+                    UI.modPat.classList.add('hidden');
+                    UI.modVol.classList.remove('hidden');
+
+                } else if (APP.score <= 70) {
+                    // --- PRISM ---
+                    UI.dashBadge.innerText = "⚠️ PRISM";
+                    UI.dashBadge.className = "text-2xl md:text-3xl font-display font-extrabold text-warningYellow uppercase tracking-widest mb-3 drop-shadow-[0_0_15px_rgba(255,200,0,0.8)] transition-all duration-300";
+                    UI.dashDesc.innerText = "Defisit fungsional sub-klinis terdeteksi. Modul DTx Neuro-Visual Rehab diaktifkan secara otomatis untuk melatih otak pasien.";
+                    UI.dashPanel.style.borderColor = "rgba(255, 200, 0, 0.6)";
+                    UI.dashGlow.style.backgroundColor = "#FFC800";
+                    UI.dashLine.style.backgroundColor = "#FFC800";
+                    
+                    UI.modDtx.classList.remove('opacity-40', 'grayscale', 'pointer-events-none');
+                    UI.modPat.classList.add('hidden');
+                    UI.modVol.classList.remove('hidden');
+
+                } else {
+                    // --- VOYAGER ---
+                    UI.dashBadge.innerText = "🚨 VOYAGER";
+                    UI.dashBadge.className = "text-2xl md:text-3xl font-display font-extrabold text-alertRed uppercase tracking-widest mb-3 drop-shadow-[0_0_15px_rgba(255,42,85,0.8)] transition-all duration-300";
+                    UI.dashDesc.innerText = "Disabilitas visual parah. Rujukan bedah urgen direkomendasikan. Modul Bantuan Kamera WebRTC aktif untuk memanggil relawan.";
+                    UI.dashPanel.style.borderColor = "rgba(255, 42, 85, 0.6)";
+                    UI.dashGlow.style.backgroundColor = "#FF2A55";
+                    UI.dashLine.style.backgroundColor = "#FF2A55";
+                    
+                    UI.modDtx.classList.remove('opacity-40', 'grayscale', 'pointer-events-none');
+                    UI.modVol.classList.add('hidden');
+                    UI.modPat.classList.remove('hidden');
+                    UI.modPat.style.display = 'flex';
+                }
+            }
+
+            // ==========================================
+            // 3. EVENT LISTENERS PENGGERAK TES
+            // ==========================================
+            
+            // FOG
+            UI.inFog.addEventListener('input', (e) => {
+                APP.fog = parseInt(e.target.value);
+                UI.lblFog.innerText = APP.fog + '%';
+                let op = (APP.fog / 100) * 0.9;
+                let blur = APP.fog / 10;
+                UI.visFog.style.backgroundColor = `rgba(230,245,255,${op})`;
+                UI.visFog.style.backdropFilter = `blur(${blur}px)`;
+                executeEngine();
+            });
+
+            // CONTRAST (Siklus Klik)
+            let cIndex = 0;
+            const opacs = [1, 0.6, 0.3, 0.1, 0.02];
+            const defs = [0, 25, 50, 75, 100];
+            UI.btnCont.addEventListener('click', () => {
+                cIndex = (cIndex + 1) % 5;
+                UI.visContTxt.style.opacity = opacs[cIndex];
+                APP.contrast = defs[cIndex];
+                UI.lblCont.innerText = APP.contrast + '% Defisit';
+                UI.visContBar.style.width = APP.contrast + '%';
+                executeEngine();
+            });
+
+            // DETAIL
+            UI.btnDet.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    let btnT = e.currentTarget;
+                    let val = parseInt(btnT.getAttribute('data-val'));
+                    
+                    APP.detail = val;
+                    UI.lblDet.innerText = val + '% Defisit';
+                    
+                    UI.btnDet.forEach(b => {
+                        b.classList.remove('active', 'bg-cyanGlow/20', 'border-cyanGlow');
+                        b.classList.add('bg-white/5', 'border-white/20');
+                    });
+                    btnT.classList.remove('bg-white/5', 'border-white/20');
+                    btnT.classList.add('active', 'bg-cyanGlow/20', 'border-cyanGlow');
+                    executeEngine();
+                });
+            });
+
+            // GLARE
+            UI.inGlare.addEventListener('input', (e) => {
+                APP.glare = parseInt(e.target.value);
+                UI.lblGlare.innerText = APP.glare + '%';
+                
+                let g = APP.glare / 100;
+                UI.visGlareBeam.style.opacity = g;
+                UI.visGlareWash.style.opacity = g * 0.8;
+                
+                UI.visGlareNum.forEach(num => {
+                    num.style.textShadow = `0 0 ${g * 30}px rgba(255,255,255,${g})`;
+                    num.style.color = `rgba(255,255,255,${Math.max(0.01, 0.2 - (g*0.2))})`;
+                });
+                executeEngine();
+            });
+
+            // Inisialisasi awal
+            executeEngine();
+
+            // ==========================================
+            // 4. DTX GABOR PATCH & CHART.JS (NEURO REHAB)
+            // ==========================================
+            const canvasDtx = document.getElementById('canvas-gabor');
+            const ctxDtx = canvasDtx.getContext('2d');
+            let dtxPhase = 0; let dtxCont = 1.0; let dtxOr = 'vertical'; let dtxStreak = 0;
+
+            function animateGabor() {
+                dtxPhase += 0.05; 
+                const w = 80; const h = 80;
+                const imgData = ctxDtx.createImageData(w, h);
+                const freq = 0.08; const sigma = 35;
+                const angle = dtxOr === 'vertical' ? 0 : Math.PI/2;
+
+                for(let y=0; y<h; y++){
+                    for(let x=0; x<w; x++){
+                        let nx = x - w/2; let ny = y - h/2;
+                        let xt = nx * Math.cos(angle) + ny * Math.sin(angle);
+                        let yt = -nx * Math.sin(angle) + ny * Math.cos(angle);
+                        let env = Math.exp(-(xt*xt + yt*yt) / (2 * sigma * sigma));
+                        let carrier = Math.cos(2 * Math.PI * freq * xt + dtxPhase);
+                        let val = 128 + (127 * dtxCont * env * carrier);
+                        let idx = (y * w + x) * 4;
+                        imgData.data[idx] = val; imgData.data[idx+1] = val; imgData.data[idx+2] = val; imgData.data[idx+3] = 255;
+                    }
+                }
+                ctxDtx.putImageData(imgData, 0, 0);
+                requestAnimationFrame(animateGabor);
+            }
+            animateGabor(); // Start Loop
+
+            // Chart.js Live Graph Initialization
+            const ctxChart = document.getElementById('dtx-chart').getContext('2d');
+            const dtxChartData = [100];
+            const dtxChartLabels = ['Mulai'];
+            const dtxChart = new Chart(ctxChart, {
+                type: 'line',
+                data: {
+                    labels: dtxChartLabels,
+                    datasets: [{
+                        label: 'Kontras (%)',
+                        data: dtxChartData,
+                        borderColor: '#00D1FF',
+                        backgroundColor: 'rgba(0, 209, 255, 0.15)',
+                        borderWidth: 2, fill: true, pointRadius: 3, pointBackgroundColor: '#00FFC6',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 0, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { display: false }, grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                }
+            });
+
+            // Global Function connected to HTML buttons
+            window.dtxGuess = function(guess) {
+                const fbk = document.getElementById('dtx-msg');
+                if (guess === dtxOr) {
+                    dtxStreak++;
+                    fbk.innerHTML = `<span class='text-surgicalTeal font-bold'>Benar! Streak: ${dtxStreak}</span>`;
+                    if (dtxStreak >= 3) {
+                        dtxCont = Math.max(0.05, dtxCont - 0.1); // Turunkan kontras (Staircase)
+                        dtxStreak = 0;
+                        fbk.innerHTML = `<span class='text-cyanGlow font-bold'>Neuroadaptasi! Kontras diturunkan.</span>`;
+                    }
+                } else {
+                    dtxStreak = 0;
+                    dtxCont = Math.min(1.0, dtxCont + 0.15); // Naikkan kontras
+                    fbk.innerHTML = `<span class='text-alertRed font-bold'>Salah. Kontras dinaikkan.</span>`;
+                }
+                
+                // Randomize next orientation
+                dtxOr = Math.random() > 0.5 ? 'vertical' : 'horizontal';
+                
+                // Update UI Texts
+                document.getElementById('dtx-lbl-cont').innerText = Math.round(dtxCont*100)+'%';
+                document.getElementById('dtx-lbl-streak').innerText = dtxStreak;
+                
+                // Update Live Chart.js
+                dtxChartData.push(Math.round(dtxCont*100));
+                dtxChartLabels.push('');
+                if(dtxChartData.length > 15) { dtxChartData.shift(); dtxChartLabels.shift(); }
+                dtxChart.update();
+            };
+
+
+            // ==========================================
+            // 5. WEBRTC CAMERA & HUD ENGINE (100% PROOF)
+            // ==========================================
+            window.isCamLive = false;
+            window.camMediaStream = null;
+            let simReqFrame = null;
+            let filterActive = false;
+
+            // Kamera Simulasi (Canvas) jika hardware diblokir browser
+            const camFallbackCanvas = document.getElementById('cam-fallback');
+            const camFallbackCtx = camFallbackCanvas.getContext('2d');
+            function renderSimulatedCam() {
+                camFallbackCanvas.width = 400; camFallbackCanvas.height = 250;
+                const imgD = camFallbackCtx.createImageData(400, 250);
+                for(let i=0; i<imgD.data.length; i+=4){
+                    let v = Math.random() * 40; 
+                    imgD.data[i] = 0; imgD.data[i+1] = v*2; imgD.data[i+2] = v; imgD.data[i+3] = 255;
+                }
+                camFallbackCtx.putImageData(imgD, 0, 0);
+                
+                // Draw rotating circle to simulate moving objects
+                let time = Date.now() / 1000;
+                camFallbackCtx.strokeStyle = 'rgba(0, 209, 255, 0.5)';
+                camFallbackCtx.lineWidth = 2;
+                camFallbackCtx.beginPath();
+                camFallbackCtx.arc(200, 125, 60 + Math.sin(time*2)*15, 0, Math.PI*2);
+                camFallbackCtx.stroke();
+                
+                simReqFrame = requestAnimationFrame(renderSimulatedCam);
+            }
+
+            window.startCamEngine = async function() {
+                const btnContainer = document.getElementById('cam-btn-start');
+                const videoEl = document.getElementById('cam-video');
+                const hudEl = document.getElementById('cam-hud');
+                const msgBlockEl = document.getElementById('cam-msg-blocked');
+                const btn = btnContainer.querySelector('button');
+
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMINTA AKSES KAMERA...';
+
+                setTimeout(async () => {
+                    btnContainer.classList.add('hidden');
+                    window.isCamLive = true;
+                    
+                    try {
+                        // MINTA AKSES WEBCAM HARDWARE
+                        window.camMediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        videoEl.srcObject = window.camMediaStream;
+                        videoEl.classList.remove('hidden');
+                        hudEl.classList.remove('hidden');
+                    } catch(err) {
+                        // JIKA DIBLOKIR BROWSER LOKAL -> NYALAKAN KANVAS SIMULASI
+                        console.warn("Hardware Kamera diblokir browser. Menggunakan Simulasi Visual Canvas.");
+                        camFallbackCanvas.classList.remove('hidden');
+                        msgBlockEl.classList.remove('hidden');
+                        msgBlockEl.style.display = 'flex';
+                        hudEl.classList.remove('hidden');
+                        renderSimulatedCam(); // Jalankan loop animasi canvas
+                    }
+                }, 1000);
+            };
+
+            window.stopCamEngine = function() {
+                window.isCamLive = false;
+                const btnContainer = document.getElementById('cam-btn-start');
+                btnContainer.classList.remove('hidden');
+                btnContainer.querySelector('button').innerHTML = '<i class="fa-solid fa-phone-volume animate-bounce"></i> PANGGIL BANTUAN (HELP)';
+                
+                document.getElementById('cam-video').classList.add('hidden');
+                document.getElementById('cam-hud').classList.add('hidden');
+                document.getElementById('cam-fallback').classList.add('hidden');
+                document.getElementById('cam-msg-blocked').classList.add('hidden');
+                document.getElementById('snapshot-preview').classList.add('hidden');
+
+                // Matikan hardware jika nyala
+                if(window.camMediaStream) {
+                    window.camMediaStream.getTracks().forEach(t => t.stop());
+                    window.camMediaStream = null;
+                }
+                // Matikan loop canvas jika nyala
+                if(simReqFrame) cancelAnimationFrame(simReqFrame);
+            };
+
+            // Fitur Ekstra Kamera
+            window.toggleFilter = function() {
+                filterActive = !filterActive;
+                const videoEl = document.getElementById('cam-video');
+                const simCanvas = document.getElementById('cam-fallback');
+                if(filterActive) {
+                    videoEl.classList.add('video-enhanced');
+                    simCanvas.classList.add('video-enhanced');
+                    alert("Enhancement Visual Diaktifkan.\nFilter kecerahan dan kontras tinggi diterapkan pada video untuk membantu relawan melihat di tempat gelap.");
+                } else {
+                    videoEl.classList.remove('video-enhanced');
+                    simCanvas.classList.remove('video-enhanced');
+                }
+            };
+
+            window.captureImage = function() {
+                const videoEl = document.getElementById('cam-video');
+                const snapCanvas = document.getElementById('snapshot-canvas');
+                const previewBox = document.getElementById('snapshot-preview');
+                
+                if(window.camMediaStream) {
+                    // Tarik gambar dari hardware camera
+                    snapCanvas.width = videoEl.videoWidth;
+                    snapCanvas.height = videoEl.videoHeight;
+                    snapCanvas.getContext('2d').drawImage(videoEl, 0, 0);
+                    previewBox.classList.remove('hidden');
+                    setTimeout(() => previewBox.classList.add('hidden'), 3000); // hilangkan setelah 3 detik
+                } else {
+                    alert("📸 Simulasi Snapshot (Capture) Kamera Diambil!");
+                }
+            };
+
+
+            // ==========================================
+            // 6. GSAP ANIMATIONS & PARTICLES
+            // ==========================================
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.from(".gsap-hero", { y: 30, opacity: 0, duration: 1, stagger: 0.1, ease: "power3.out" });
+            gsap.utils.toArray('.gsap-fade').forEach(el => {
+                gsap.from(el, { scrollTrigger: { trigger: el, start: "top 85%" }, y: 30, opacity: 0, duration: 0.8, ease: "power2.out" });
+            });
+
+            const pCan = document.getElementById('bg-particles');
+            const pCtx = pCan.getContext('2d');
+            function resizeP() { pCan.width = window.innerWidth; pCan.height = window.innerHeight; }
+            window.addEventListener('resize', resizeP); resizeP();
+            
+            const parts = Array.from({length: 40}, () => ({ 
+                x: Math.random()*pCan.width, y: Math.random()*pCan.height, 
+                vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3, s: Math.random()*1.5 
+            }));
+            
+            function animateParticles() {
+                pCtx.clearRect(0,0,pCan.width,pCan.height);
+                pCtx.fillStyle = 'rgba(0, 209, 255, 0.4)';
+                parts.forEach(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    if(p.x<0||p.x>pCan.width) p.vx*=-1; 
+                    if(p.y<0||p.y>pCan.height) p.vy*=-1;
+                    pCtx.beginPath(); pCtx.arc(p.x, p.y, p.s, 0, Math.PI*2); pCtx.fill();
+                });
+                requestAnimationFrame(animateParticles);
+            }
+            animateParticles();
+        });
+    </script>
+</body>
+</html>
